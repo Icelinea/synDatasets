@@ -2,4 +2,4 @@
 device = 'cuda'
 
 globalModelPath = ""
-globalModelName = ""
+globalModelName = "qwq-32b"

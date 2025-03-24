@@ -47,21 +47,21 @@ class Agent():
             tokenize=False,
             add_generation_prompt=True
         )
-        model_inputs = self.tokenizer([text], return_tensors="pt").to(device)
+        modelInputs = self.tokenizer([text], return_tensors="pt").to(device)
 
-        generated_ids = self.model.generate(
-            model_inputs.input_ids,
+        generatedIds = self.model.generate(
+            modelInputs.input_ids,
             max_new_tokens=512
         )
-        generated_ids = [
-            output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+        generatedIds = [
+            outputIds[len(input_ids):] for input_ids, outputIds in zip(modelInputs.input_ids, generatedIds)
         ]
 
-        response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        response = self.tokenizer.batch_decode(generatedIds, skip_special_tokens=True)[0]
 
         return response
     
-    def chat(self):
+    def chat(self, input, history):
         1
 
 

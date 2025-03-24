@@ -36,7 +36,6 @@ setupPrompt = "你是一名心理健康领域的专家，以下是你需要理�
 
 def background_synthesis(role, epoches, genNum, exampleNum, dataPath, outputPath):
     assert role == "patient"
-    assert type(exampleNum) == type(0)
     
     data = None
     with open(dataPath, 'r', encoding='utf-8') as f:
