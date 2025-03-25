@@ -14,8 +14,8 @@ class Agent():
         self.role = role    # 索引名
         self.background = background    # 背景
         self.persona = persona  # 语言风格
+        self.setupPrompt = None
 
-        self.messages = []
         self.debugMode = False
 
     def model_init(self, setupPrompt=None):
@@ -26,9 +26,9 @@ class Agent():
 
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_path,
-            torch_dtype = torch.float16,
-            device_map = "balanced",
-            low_cpu_mem_usage=True
+            torch_dtype = "auto",
+            device_map = "auto",
+            # low_cpu_mem_usage=True
         )
 
         if self.debugMode:
@@ -39,9 +39,7 @@ class Agent():
             self.model_path
         )
 
-        self.messages.append(
-            {"role": "system", "content": setupPrompt}
-        )
+        self.setupPrompt = {"role": "system", "content": setupPrompt}
 
     def generate(self, exampleNum, backgroundExample):
         assert type(exampleNum) == type(0)
@@ -49,41 +47,28 @@ class Agent():
         if self.debugMode:
             print(1, cuda_memory())
 
-        genPrompt = "请生成 {} 条符合要求 json 格式的患者背景消息，可以参考下面提供的病患的信息丰富你生成的内容，但是生成的内容中不能与病患的信息相同：{}".format(exampleNum, backgroundExample)   # 案例
-        self.messages.append(
+        genPrompt = "请生成 {} 条符合要求 json 格式的患者背景消息，可以参考下面提供的病患的信息丰富你生成的内容，生成的病患信息尽量不要相似或者重复，在丰富生成数据的同时保持数据分布符合现实世界常理：{}".format(exampleNum, backgroundExample)   # 案例
+        messages = []
+        messages.append(self.setupPrompt)
+        messages.append(
             {"role": "user", "content": genPrompt}
         )
 
         text = self.tokenizer.apply_chat_template(
-            self.messages,
+            messages,
             tokenize=False,
             add_generation_prompt=True
         )
         
-        if self.debugMode:
-            print(2, cuda_memory())
-
         with torch.no_grad():  # 禁用梯度计算
             modelInputs = self.tokenizer([text], return_tensors="pt").to(device)
-
-            if self.debugMode:
-                print(3, cuda_memory())
-    
             generatedIds = self.model.generate(
                 modelInputs.input_ids,
                 max_new_tokens=512
             )
-
-            if self.debugMode:
-                print(4, cuda_memory())
-            
             generatedIds = [
                 outputIds[len(input_ids):] for input_ids, outputIds in zip(modelInputs.input_ids, generatedIds)
             ]
-
-            if self.debugMode:
-                print(5, cuda_memory())
-    
             response = self.tokenizer.batch_decode(generatedIds, skip_special_tokens=True)[0]
 
         # 释放 cuda 内存
@@ -91,7 +76,7 @@ class Agent():
         torch.cuda.empty_cache()
         
         if self.debugMode:
-            print(6, cuda_memory())
+            print(2, cuda_memory())
         
         return response
     
