@@ -3,6 +3,9 @@ import json
 from utils.parameters import *
 from utils.agent import Agent
 
+import os
+# 设置环境变量来控制 PyTorch 显存管理
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128,garbage_collection_threshold:0.9'
 
 # Parameters
 dialogueTopics = {
@@ -52,4 +55,4 @@ def background_synthesis(role, epoches, genNum, exampleNum, dataPath, outputPath
 
 
 if __name__ == '__main__':
-    background_synthesis("patient", 100, 1, 10, "./data/CPsyCounR/CPsyCounR.json", "./data/PatientBackground/bg1.json")
+    background_synthesis("patient", 10, 1, 10, "./data/CPsyCounR/CPsyCounR.json", "./data/PatientBackground/bg1.json")
