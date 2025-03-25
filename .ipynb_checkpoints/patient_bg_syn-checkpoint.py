@@ -3,8 +3,8 @@ import json
 from utils.parameters import *
 from utils.agent import Agent
 
-import os
 # 设置环境变量来控制 PyTorch 显存管理
+import os
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128,garbage_collection_threshold:0.9'
 
 # Parameters
@@ -27,31 +27,44 @@ setupPrompt = "你是一名心理健康领域的专家，以下是你需要理�
 
 def background_synthesis(role, epoches, genNum, exampleNum, dataPath, outputPath):
     assert role == "patient"
-    
+
+    # 读取案例数据
     data = None
     with open(dataPath, 'r', encoding='utf-8') as f:
         data = json.load(f)
     assert data != None
 
     # print(data[0]["案例简述"])  # test
+    
+    # 如果文件不存在，先写入一个空列表
+    if not os.path.exists(outputPath):
+        with open(outputPath, 'w', encoding='utf-8') as f:
+            json.dump([], f, ensure_ascii=False, indent=4)
 
     agent = Agent(globalModelPath, globalModelName, role)
     agent.model_init(setupPrompt)
-    
-    reponses = []
+
+    # reponses = []
     for epoch in range(epoches):
         selects = random.sample(data, exampleNum)
         selectData = [dic["案例简述"] for dic in selects]
         reponse = agent.generate(genNum, selectData)
 
         print(epoch, reponse)
-        # mov = json.loads(reponse)
-        # for i in mov: reponses.append(i)
-        reponses.append(reponse)
-
-    # write 格式的问题，indent？
-    with open(outputPath, 'w', encoding='utf-8') as o:
-        json.dump(reponses, o, ensure_ascii=False, indent=4)
+        # reponses.append(reponse)
+        
+        # 读取原有数据
+        with open(outputPath, 'r', encoding='utf-8') as f:
+            dataset = json.load(f)
+        # 添加新数据
+        dataset.append(reponse)
+        # 写回文件
+        with open(outputPath, 'w', encoding='utf-8') as f:
+            json.dump(dataset, f, ensure_ascii=False, indent=4)
+    
+    # # write 格式的问题
+    # with open(outputPath, 'w', encoding='utf-8') as o:
+    #     json.dump(reponses, o, ensure_ascii=False, indent=4)
 
 
 if __name__ == '__main__':

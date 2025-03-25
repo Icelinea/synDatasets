@@ -16,7 +16,7 @@ class Agent():
         self.persona = persona  # 语言风格
 
         self.messages = []
-        self.debugMode = True
+        self.debugMode = False
 
     def model_init(self, setupPrompt=None):
         assert setupPrompt != None
