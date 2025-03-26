@@ -10,11 +10,11 @@ os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128,garbage_collectio
 # Parameters
 dialogueTopics = [
     "[情绪表现]指个体在某段时间内的整体情感状态，如愉快、焦虑等，影响思维和行为，一般持续时间较短",
-    "[兴趣爱好]指个体对活动、事物或人的关注和吸引力。兴趣缺失可能与抑郁等心理问题相关",
+    "[兴趣爱好]指个体对活动、事物的关注和吸引力。兴趣缺失可能与抑郁等心理问题相关",
     "[心理状态]指个体的思维、情绪、行为和认知功能的总体表现，相对于情绪来说持续时间更久并且影响更大",
     "[睡眠情况]指休息性状态，影响身心健康。失眠或过度睡眠是常见的心理健康问题",
     "[食欲状况]指个体对食物的渴望或需求，食欲变化可反映抑郁、焦虑等情绪问题",
-    "[躯体症状]指由心理因素引起的身体症状，如头痛、胸痛等，常见于心理疾病患者",
+    "[躯体症状]指由心理因素引起的身体症状，如头痛、胸痛等",
     "[社交功能]指个体在社会互动中的适应能力，包括工作、家庭和朋友关系等方面",
     "[自杀倾向]指个体产生自杀念头、计划或行为的倾向，通常与严重的心理疾病相关",
     "[其他情况]个体不存在以上所有普遍心理健康问题的情况，可能是正常心理健康的个体或者是有着疑似症状被误诊但是实际上正常的个体"
@@ -45,28 +45,29 @@ def background_synthesis(role, epoches, genNum, exampleNum, dataPath, outputPath
     agent = Agent(globalModelPath, globalModelName, role)
     agent.model_init(setupPrompt)
 
-    # reponses = []
+    # responses = []
     for epoch in range(epoches):
         selects = random.sample(data, exampleNum)
         selectData = [dic["案例简述"] for dic in selects]
 
-        reponse = agent.generate(genNum, selectData)
+        genPrompt = "请生成 {} 条符合要求 json 格式的患者背景消息，可以参考下面提供的病患的信息丰富你生成的内容，生成的病患信息尽量不要相似或者重复，在丰富生成数据的同时保持数据分布符合现实世界常理：{}".format(genNum, selectData)   # 案例
+        response = agent.generate(genPrompt)
 
-        print(epoch, reponse)
-        # reponses.append(reponse)
+        print(epoch, response)
+        # responses.append(response)
         
         # 读取原有数据
         with open(outputPath, 'r', encoding='utf-8') as f:
             dataset = json.load(f)
         # 添加新数据
-        dataset.append(reponse)
+        dataset.append(response)
         # 写回文件
         with open(outputPath, 'w', encoding='utf-8') as f:
             json.dump(dataset, f, ensure_ascii=False, indent=4)
     
     # # write 格式的问题
     # with open(outputPath, 'w', encoding='utf-8') as o:
-    #     json.dump(reponses, o, ensure_ascii=False, indent=4)
+    #     json.dump(responses, o, ensure_ascii=False, indent=4)
 
 
 if __name__ == '__main__':

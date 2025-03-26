@@ -1,0 +1,52 @@
+def deduplicate_data(df, threshold=0.8):
+    # 数据预处理，构造去重的字段
+    preprocessed_data = {}
+    for idx, row in df.iterrows():
+        preprocessed_data[idx] = {'背景': row['背景']}
+    
+    # 创建去重模型
+    # ValueError: It looks like you are trying to use a variable definition composed of dictionaries. dedupe 3.0 uses variable objects directly. So instead of [{"field": "name", "type": "String"}] we now do [dedupe.variables.String("name")].
+    # fields = [{'field': '背景', 'type': 'Text'}]
+    fields = [dedupe.variables.String("背景")]
+    deduper = dedupe.Dedupe(fields)
+    
+    # 训练去重模型
+    deduper.prepare_training(preprocessed_data)
+    print(preprocessed_data)
+    deduper.train()
+
+    # 匹配相似的记录
+    threshold = threshold  # 设定相似度阈值
+    clusters = deduper.match(preprocessed_data, threshold)
+    
+    # 根据相似度进行去重
+    result = {}
+    for cluster in clusters:
+        # 在每个簇中，保留背景字数更多的那个    TODO:可以使用质量评分更高的那个？
+        cluster_sorted = sorted(cluster, key=lambda x: len(preprocessed_data[x[0]]['背景']), reverse=True)
+        result[cluster_sorted[0][0]] = preprocessed_data[cluster_sorted[0][0]]
+
+    return result
+
+def label_correct(name):
+    # 使用去重
+    df = pd.read_csv(processedPath + name, encoding='ansi')
+    print(df.count())
+
+    result = deduplicate_data(df)
+    retained_indices = result.keys()
+    df_retained = df.iloc[list(retained_indices)]
+    # 保存去重后的结果
+    df_retained.to_csv(processedPath + "depu_" + name, index=False, encoding='ansi')
+
+
+"""
+    [代码说明]
+    读取 CSV 文件：我们使用 pandas.read_csv() 来读取 CSV 文件，并将其转换为 DataFrame 对象。
+    数据预处理：preprocess_data(df) 函数将 DataFrame 中的每一行提取成字典，以便 dedupe 库进行去重。这里的每一行没有 id 列，所以我们直接使用行号（idx）作为字典的键，将 背景 字段的值作为去重的标准。
+    去重和相似度计算：deduplicate_data(df) 函数使用 dedupe 库来计算每一条记录的相似度，并按背景字数进行筛选。对于每一组相似记录（簇），会根据 背景 字数的多寡来保留背景字数较多的记录。
+    保存结果：save_to_csv(df, result, output_file) 将去重后的结果保存到新的 CSV 文件中。result 存储了所有保留的行的索引，使用 df.iloc[] 按照索引从原始 DataFrame 中提取并保存数据。
+
+    threshold 参数是相似度的阈值，值越高，去重过程越严格。你可以根据需要调整阈值，以决定哪些记录会被认为是相似的。
+    通过 sorted(cluster, key=lambda x: len(preprocessed_data[x[0]]['背景']), reverse=True)，我们根据每个簇中“背景”字段的字数，保留背景字数更多的记录。
+    """

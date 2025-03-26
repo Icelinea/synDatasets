@@ -41,13 +41,10 @@ class Agent():
 
         self.setupPrompt = {"role": "system", "content": setupPrompt}
 
-    def generate(self, exampleNum, backgroundExample):
-        assert type(exampleNum) == type(0)
-        
+    def generate(self, genPrompt):
         if self.debugMode:
             print(1, cuda_memory())
 
-        genPrompt = "请生成 {} 条符合要求 json 格式的患者背景消息，可以参考下面提供的病患的信息丰富你生成的内容，生成的病患信息尽量不要相似或者重复，在丰富生成数据的同时保持数据分布符合现实世界常理：{}".format(exampleNum, backgroundExample)   # 案例
         messages = []
         messages.append(self.setupPrompt)
         messages.append(
