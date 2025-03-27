@@ -10,7 +10,7 @@ doctorPersonaPath = "data/Persona/doctor.json"
 outputPath = "./data/Chats/c1.json"
 
 
-def chatdata_synthesis(epoches, maxChats):
+def one_chatdata_synthesis(maxChats):
     # 加载
     data = None
     pbdata = None
@@ -40,29 +40,34 @@ def chatdata_synthesis(epoches, maxChats):
     doctor.model_init(doctorSystemPrompt)
 
     chats = []
-    for epoch in range(epoches):
-        chatNum = random.randint(3, maxChats)
+    chatNum = random.randint(3, maxChats)
 
-        history = []
-        chats.append(pbdata)
+    history = []
+    chats.append(pbdata)
 
-        for i in range(chatNum):
-            # 对话
-            patientResponse = patient.chat(history)
-            history.append("患者：" + patientResponse)
-            doctorResponse = doctor.chat(history)
-            history.append("医生：" + doctorResponse)
+    for i in range(chatNum):
+        # 对话
+        patientResponse = patient.chat(history)
+        history.append("患者：" + patientResponse)
+        doctorResponse = doctor.chat(history)
+        history.append("医生：" + doctorResponse)
 
-            chats.append({"role": "user", "content": patientResponse})
-            if "EOF" in doctorResponse:
-                chats.append({"role": "assistant", "content": "医生认为当前患者的心理健康问题已得到改善"})
-                break
-            else:
-                chats.append({"role": "assistant", "content": doctorResponse})
+        chats.append({"role": "user", "content": patientResponse})
+        if "EOF" in doctorResponse:
+            chats.append({"role": "assistant", "content": "医生认为当前患者的心理健康问题已得到改善"})
+            break
+        else:
+            chats.append({"role": "assistant", "content": doctorResponse})
 
     # 输出包括患者背景相关信息
     with open(outputPath, 'w', encoding='utf-8') as o:
         json.dump(chats, o, ensure_ascii=False, indent=4)
 
+
+def chatdatas(epoches=3, maxChats=10):
+    for epoch in range(epoches):
+        one_chatdata_synthesis(maxChats)
+
+
 if __name__ == '__main__':
-    chatdata_synthesis(3, 5)
+    chatdatas()
