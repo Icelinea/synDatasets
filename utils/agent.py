@@ -4,7 +4,7 @@ from utils.parameters import *
 
 
 class Agent():
-    def __init__(self, model_path, model_name, role="", background="", persona=""):
+    def __init__(self, model_path, model_name, role="", persona=""):
         self.model_path = model_path
         self.model_name = model_name
 
@@ -12,17 +12,19 @@ class Agent():
         self.tokenizer = None
         
         self.role = role    # 索引名
-        self.background = background    # 患者背景
         self.persona = persona  # 语言风格
         self.setupPrompt = None
 
         self.debugMode = False
 
-    def model_init(self, setupPrompt=None):
+        
+
+    def model_init(self, setupPrompt=None, printPrompt=True):
         assert setupPrompt != None
-        print('\n--- setupPrompt for {} ---'.format(self.role))
-        print(setupPrompt)
-        print('-----\n')
+        if printPrompt:
+            print('\n--- setupPrompt for {} ---'.format(self.role))
+            print(setupPrompt)
+            print('-----\n')
 
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_path,
@@ -38,9 +40,18 @@ class Agent():
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_path
         )
-
+        
         self.setupPrompt = {"role": "system", "content": setupPrompt}
 
+    def prompt_init(self, setupPrompt=None, printPrompt=True):
+        assert setupPrompt != None
+        if printPrompt:
+            print('\n--- setupPrompt for {} ---'.format(self.role))
+            print(setupPrompt)
+            print('-----\n')
+            
+        self.setupPrompt = {"role": "system", "content": setupPrompt}
+    
     def generate(self, genPrompt):
         if self.debugMode:
             print(1, cuda_memory())
@@ -77,19 +88,23 @@ class Agent():
         
         return response
     
-    def chat(self, history):
+    def chat(self, background, history, temperature=0.5, top_k=50, top_p=0.95, num_return_sequences=1, seed=42):
         # general
         messages = []
         messages.append(self.setupPrompt)
 
         # role-specific
-        genPrompt = "你与对方的历史对话记录为：{}。其中每个对话前面都有表示其身份的名称医生或者患者。".format(history)
+        genPrompt = ""
         if self.role == "patient":
-            genPrompt += "如果没有历史对话记录，请你按照自己的患者求助背景和指定的性格向医生提出合理的问题。如果有历史对话记录，请你按照你自己的性格回答医生的问题或者继续自己的行为。请不要说谎，如实的说明你当前的想法，自身的心理健康问题是否得到改善或者恶化。注意字数需要控制在 10 到 100 个中文字数之间。注意使用一定要使用口语化的表达。"
+            genPrompt = "请你按照你自己的性格回答医生的问题或者提出自己的问题。如实的说明你当前的想法，说明自身的心理健康问题是否得到改善或者恶化。如果你认为当前主题已经探讨完全或者自己的心理问题得到了改善，只需要回答\"EOF\"终止对话。注意字数需要控制在 10 到 100 个中文字数之间。注意使用一定要使用口语化的表达，不需要说“你好”等问候语。你与对方的历史对话记录为：{}。其中每个对话前面都有表示其身份的名称即医生或者患者，其中“患者”表示你说过的话，“医生”表示对方回复你的话，接下来你作为患者继续对话，请记住你的患者身份，不要说谎或者重复说过的话，并且请一定在每次回复的时候加上“患者：”。".format(history)
         elif self.role == "doctor":
-            genPrompt += "按照患者所提供的背景，当前的患者核心病症主题应该是{}。你作为心理健康领域医生需要坚持向患者探讨这个主题，尽量不要被带偏，直到患者的心理问题得到改善。你可以向患者提出问题来进一步了解患者的内心想法，也可以回答患者提出的问题。如果你认为当前主题已经探讨完全或者患者的心理问题得到了很大的改善，只需要回答\"EOF\"就会终止对话，不需要回复其他任何东西。注意字数需要控制在 10 到 100 个中文字数之间。注意使用一定要使用口语化的表达。".format(self.background["主题"])
+            genPrompt = "按照患者所提供的背景，当前的患者核心病症应该是{}。你作为心理健康领域医生需要坚持向患者探讨这个主题，尽量不要被带偏，直到你认为患者的心理问题得到改善。你可以向患者提出问题来进一步了解患者的内心想法，也可以回答患者提出的问题。如果你认为当前主题已经探讨完全或者患者的心理问题得到了改善，只需要回答\"EOF\"终止对话。注意字数需要控制在 10 到 100 个中文字数之间。注意使用一定要使用口语化的表达，不需要说“你好”等问候语。你与对方的历史对话记录为：{}。其中每个对话前面都有表示其身份的名称即医生或者患者，其中“医生”表示你说过的话，“患者”表示对方回复你的话，接下来你作为医生继续对话，请记住你的医生身份，不要说谎或者重复说过的话，并且请一定在每次回复的时候加上“医生：”。".format(background, history)
         assert genPrompt != ""
 
+        # 随机
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        
         messages.append(
             {"role": "user", "content": genPrompt}
         )
@@ -104,7 +119,11 @@ class Agent():
             modelInputs = self.tokenizer([text], return_tensors="pt").to(device)
             generatedIds = self.model.generate(
                 modelInputs.input_ids,
-                max_new_tokens=512
+                max_new_tokens=512,
+                temperature=temperature,  # 控制生成的多样性，值越高生成越随机
+                top_k=top_k,
+                top_p=top_p,
+                num_return_sequences=num_return_sequences,
             )
             generatedIds = [
                 outputIds[len(input_ids):] for input_ids, outputIds in zip(modelInputs.input_ids, generatedIds)
