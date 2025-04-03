@@ -9,8 +9,8 @@ import pandas as pd
 patientBackgroundPath = "data/PatientBackground/processed/scored_anno_pad_dupu_bg1.csv"
 patientPersonaPath = "data/Persona/patient.json"
 doctorPersonaPath = "data/Persona/doctor.json"
-randomOutputPath = "./data/Chats/Random1/Chat"
-scoredOutputPath = "./data/Chats/Scored1/Chat"
+randomOutputPath = "./data/Chats/Random/Chat"
+scoredOutputPath = "./data/Chats/Scored/Chat"
 
 
 def one_chatdata_synthesis(selectMethod, patient, doctor, pbdata, epoch, minChats, maxChats):
@@ -90,10 +90,10 @@ def chatdatas(selectMethod, epoches=20, minChats=10, maxChats=20):
         if selectMethod == 'random':
             pbdata = df.sample(n=1).iloc[0]
         elif selectMethod == 'score':
-            if epoch + 600 > len(df):
+            if epoch > len(df):
                 print("可用的基于评分的背景数据已用完")
                 break
-            pbdata = df.iloc[epoch + 600]
+            pbdata = df.iloc[epoch]
         else: 
             assert False
         ppdata = random.sample(patientPersonadata, 1)[0]
@@ -106,9 +106,9 @@ def chatdatas(selectMethod, epoches=20, minChats=10, maxChats=20):
         patient.prompt_init(patientSystemPrompt, False)
         doctor.prompt_init(doctorSystemPrompt, False)
         
-        print('----------- Current epoch:', epoch + 768)
+        print('----------- Current epoch:', epoch)
         # print(pbdata['背景'])
-        one_chatdata_synthesis(selectMethod, patient, doctor, pbdata, epoch + 768, minChats, maxChats)
+        one_chatdata_synthesis(selectMethod, patient, doctor, pbdata, epoch, minChats, maxChats)
 
 
 if __name__ == '__main__':
