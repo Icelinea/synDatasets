@@ -47,17 +47,21 @@ def basic_process(d):
 
 def first_load(outputName, encoding='utf-8'):
     # parameters
+    # datasetName = [
+    #     "bg-appetite.json",
+    #     "bg-example.json",
+    #     "bg-interest.json",
+    #     "bg-mental.json",
+    #     "bg-mood.json",
+    #     "bg-others.json",
+    #     "bg-sleep.json",
+    #     "bg-social.json",
+    #     "bg-somatic.json",
+    #     "bg-suicidal.json"
+    # ]
     datasetName = [
-        "bg-appetite.json",
-        "bg-example.json",
-        "bg-interest.json",
-        "bg-mental.json",
-        "bg-mood.json",
-        "bg-others.json",
-        "bg-sleep.json",
-        "bg-social.json",
-        "bg-somatic.json",
-        "bg-suicidal.json"
+        "bg-appetite-pad.json",
+        "bg-sleep-pad.json"
     ]
     
     datasets = []
@@ -133,7 +137,7 @@ def convert_to_int(val):
     try:
         # 尝试将数字字符串转换为整数
         return int(val)
-    except ValueError:
+    except Exception as e:
         # 如果转换失败则返回 0
         return 0
 
@@ -180,10 +184,11 @@ def label_score(name, encoding='utf-8'):
 
         if idx % 100 == 0: print("current idx: ", idx)
 
-    df["志愿者一致性评分"] = convert_to_int(VconsistentScore)
-    df["志愿者质量评分"] = convert_to_int(VqualityScore)
-    df["专家一致性评分"] = convert_to_int(PconsistentScore)
-    df["专家质量评分"] = convert_to_int(PqualityScore)
+    df["志愿者一致性评分"] = VconsistentScore
+    df["志愿者质量评分"] = VqualityScore
+    df["专家一致性评分"] = PconsistentScore
+    df["专家质量评分"] = PqualityScore
+    df[["志愿者一致性评分", "志愿者质量评分", "专家一致性评分", "专家质量评分"]] = df[["志愿者一致性评分", "志愿者质量评分", "专家一致性评分", "专家质量评分"]].applymap(convert_to_int)
 
     print(df.info())
     df.to_csv(processedPath + "scored_" + name, index=False, encoding=encoding)
@@ -193,12 +198,12 @@ if __name__ == '__main__':
     # local_encoding = 'ansi'
     local_encoding = 'utf-8'
     
-    # first_load('bg1.csv', local_encoding)
+    # first_load('bg2.csv', local_encoding)
 
-    # label_deduplicate("bg1.csv", 0.1, local_encoding)
+    # label_deduplicate("bg2.csv", 0.1, local_encoding)
 
-    # label_score('anno_pad_dupu_bg1.csv', local_encoding)
+    # label_score('anno_pad_dupu_bg2.csv', local_encoding)
 
-    # df = pd.read_csv(processedPath + "scored_anno_pad_dupu_bg1.csv", encoding=local_encoding)
+    # df = pd.read_csv(processedPath + "scored_anno_pad_dupu_bg2.csv", encoding=local_encoding)
     # df[["志愿者一致性评分", "志愿者质量评分", "专家一致性评分", "专家质量评分"]] = df[["志愿者一致性评分", "志愿者质量评分", "专家一致性评分", "专家质量评分"]].applymap(convert_to_int)
     # df.to_csv(processedPath + "scored_anno_pad_dupu_bg1-fix.csv", index=False, encoding=local_encoding)
