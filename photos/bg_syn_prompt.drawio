@@ -1,0 +1,21 @@
+<mxfile host="65bd71144e">
+    <diagram id="Vmq0RwWhgY2VSIS52Kxv" name="第 1 页">
+        <mxGraphModel dx="875" dy="719" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="4" value="&lt;div&gt;&lt;font&gt;&lt;b&gt;System Prompt：&lt;/b&gt;&lt;/font&gt;&lt;/div&gt;&lt;font&gt;&lt;span style=&quot;background-color: rgb(0, 204, 204);&quot;&gt;你是一名心理健康领域的专家&lt;/span&gt;，以下是你需要理解的在与病患对话时的核心病症的对话主题种类，其中 [] 内的是核心病症主题的专有名词，后面接着的是该专有名词的解释，&lt;span style=&quot;background-color: rgb(255, 255, 102);&quot;&gt;你所进行的所有的心理健康对话的核心病症的主题都可以被归类到以下的情况当中：{}。&lt;/span&gt;你生成的消息一定要按照以下的 json 格式输出，其中 () 内表示你需要生成的内容，生成时请去除 () 并且不要生成多余的回复内容或者多余的标点符号，外层是列表符号 []，内层是字典符号 {{}}，具体 json 格式如下：[{{\&quot;年龄\&quot;: (), \&quot;性别\&quot;: (), \&quot;主题\&quot;: (), \&quot;背景\&quot;: ()}}]。注意其中&lt;span style=&quot;background-color: rgb(102, 204, 0);&quot;&gt;年龄为人类的正常年龄，只能是数字，不能小于 0 岁；性别只有&#39;男&#39;和&#39;女&#39;两种；主题是心理健康对话的核心病症的主题的其中一种类型&lt;/span&gt;，需要由你随机选择一种病症主题的专有名词，最终选择的名词必须完全来自前面所提供的核心病症的专有名词，只有 \&quot;情绪表现、兴趣爱好、心理状态、睡眠情况、食欲状况、躯体症状、社交功能、自杀倾向、其他情况\&quot; 可以被选择，并且保证每种主题都有同等的概率被选择到；背景是与你对话的病患所提供的病情背景信息，需要由你根据所选择的核心病症的主题进行生成，&lt;span style=&quot;background-color: rgb(102, 204, 0);&quot;&gt;字数不能少于 20 字且不能多于 100 字，并且请不要生成涉及真实人员隐私的信息，例如人名、地名、建筑名、身份证等隐私信息。&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;User Prompt：&lt;/b&gt;&lt;br&gt;请生成 {} 条符合要求 json 格式的患者背景消息，可以参考下面提供的病患的信息丰富你生成的内容，生成的病患信息尽量不要相似或者重复，在丰富生成数据的同时保持数据分布符合现实世界常理：{}&lt;/font&gt;" style="strokeWidth=1;shadow=0;dashed=0;align=left;shape=mxgraph.mockup.containers.rrect;rSize=0;strokeColor=#d79b00;verticalAlign=top;fillColor=#ffe6cc;spacingTop=40;textShadow=0;labelBackgroundColor=none;fontStyle=0;spacingLeft=20;spacingRight=20;whiteSpace=wrap;html=1;fontSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="40" width="770" height="370" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="&lt;b&gt;背景数据提示词&lt;/b&gt;" style="strokeWidth=1;shadow=0;dashed=0;align=center;html=1;shape=mxgraph.mockup.containers.rrect;rSize=0;fontSize=17;strokeColor=#b85450;align=left;spacingLeft=8;fillColor=#f8cecc;resizeWidth=1;whiteSpace=wrap;" parent="4" vertex="1">
+                    <mxGeometry width="770" height="30" relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="" style="shape=ellipse;strokeColor=#008cff;resizable=0;fillColor=none;html=1;" parent="5" vertex="1">
+                    <mxGeometry x="1" y="0.5" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-25" y="-10" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

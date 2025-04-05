@@ -1,0 +1,21 @@
+<mxfile host="65bd71144e">
+    <diagram id="p9CbC7BWHgC2HYulaToJ" name="第 1 页">
+        <mxGraphModel dx="875" dy="719" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="&lt;b&gt;System Prompt：&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;background-color: rgb(0, 204, 204);&quot;&gt;你是一位心理健康领域的专家学者&lt;/span&gt;，受邀参与一项关于共情对话主题的数据分类工作。你会得到病患的背景描述数据，请你通过分析病患背景描述数据来判断病患的核心病症。请注意，&lt;span style=&quot;background-color: rgb(255, 255, 102);&quot;&gt;病患的核心病症只有以下 9 种类别：{}，其中它们对应的详细解释如下：{}。&lt;/span&gt;你的回答只能是你认为的 9 种核心病症中的最能概括和反映所提供的病患背景表现的那一种，注意你的回答只能是核心病症 9 种类别中的其中一个专有名词，只能有四个字，不需要你做任何的分析，不要说“根据您提供的信息”等敬语，如果你无法判断就返回“无”。&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;User Prompt：&lt;/b&gt;&lt;br&gt;病患的背景描述数据为：{}。&lt;/div&gt;" style="strokeWidth=1;shadow=0;dashed=0;align=left;shape=mxgraph.mockup.containers.rrect;rSize=0;strokeColor=#d79b00;verticalAlign=top;fillColor=#ffe6cc;spacingTop=40;textShadow=0;labelBackgroundColor=none;fontStyle=0;spacingLeft=20;spacingRight=20;fontSize=16;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="40" width="770" height="260" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="&lt;b&gt;标签数据填充提示词&lt;/b&gt;" style="strokeWidth=1;shadow=0;dashed=0;align=center;html=1;shape=mxgraph.mockup.containers.rrect;rSize=0;fontSize=17;strokeColor=#b85450;align=left;spacingLeft=8;fillColor=#f8cecc;resizeWidth=1;whiteSpace=wrap;" parent="2" vertex="1">
+                    <mxGeometry width="770" height="30" relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="" style="shape=ellipse;strokeColor=#008cff;resizable=0;fillColor=none;html=1;" parent="3" vertex="1">
+                    <mxGeometry x="1" y="0.5" width="20" height="20" relative="1" as="geometry">
+                        <mxPoint x="-25" y="-10" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
