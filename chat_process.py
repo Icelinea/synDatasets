@@ -118,6 +118,19 @@ if __name__ == '__main__':
 
     identity_organize("data/Chats/Output-2/", "data/Chats/Output-1/")
 
+    """
+    Dataset Numbers:  252
+    情绪表现 : 37
+    兴趣爱好 : 38
+    心理状态 : 36
+    睡眠情况 : 50
+    食欲状况 : 10
+    躯体症状 : 1
+    社交功能 : 25
+    自杀倾向 : 29
+    其他情况 : 26
+    """
+
     topics_check("data/Chats/Output-1")
 
     # 打印每种标签数量，判断补充数据 + 找 benchmark
