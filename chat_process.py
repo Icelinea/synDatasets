@@ -39,7 +39,7 @@ def jsons_reorganize(input_dir, output_dir):
                 json.dump(oridata, f, ensure_ascii=False, indent=4)
 
 
-def identity_check(input_dir, output_dir):
+def identity_organize(input_dir, output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -116,8 +116,8 @@ def topics_check(data_dir):
 if __name__ == '__main__':
     # jsons_reorganize("data/Chats/Scored2/", "data/Chats/Output/")
 
-    # identity_check("data/Chats/Output/", "data/Chats/Output-1/")
+    identity_organize("data/Chats/Output-2/", "data/Chats/Output-1/")
 
-    topics_check("data/Chats/Output")
+    topics_check("data/Chats/Output-1")
 
     # 打印每种标签数量，判断补充数据 + 找 benchmark
