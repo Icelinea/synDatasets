@@ -4,11 +4,9 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.optim import AdamW
-from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForCausalLM, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, AutoModelForCausalLM, get_linear_schedule_with_warmup
 
-from sklearn.model_selection import train_test_split
 from nltk.translate.bleu_score import sentence_bleu
-from collections import Counter
 import random
 import numpy as np
 
@@ -112,7 +110,7 @@ def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learnin
                 print(f"Step {step}, Loss: {loss.item()}")
             losses.append(losses)
             
-            del input_ids, attention_mask, labels, outputs, loss
+            # del input_ids, attention_mask, labels, outputs, loss
             torch.cuda.empty_cache()
 
         # 保存模型
@@ -186,7 +184,7 @@ def main(command, index=0):
     # 加载处理数据
     train_dialog = load_dialog_data(train_path, "syn")
     test_dialog = load_dialog_data(test_path, "smile")
-    train_dialog = random.sample(train_dialog, 10)
+    # train_dialog = random.sample(train_dialog, 10)
     test_dialog = random.sample(test_dialog, 10)
     
     train_conversations = preprocess_dialog_data(train_dialog)
