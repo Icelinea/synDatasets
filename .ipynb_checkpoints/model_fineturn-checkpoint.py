@@ -1,15 +1,13 @@
 import json
 import os
-
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torch.optim import AdamW
-from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForCausalLM, get_linear_schedule_with_warmup
-
 from sklearn.model_selection import train_test_split
+import random
+from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+from torch.utils.data import Dataset
 from nltk.translate.bleu_score import sentence_bleu
 from collections import Counter
-import random
 import numpy as np
 
 
@@ -64,7 +62,7 @@ class ConversationDataset(Dataset):
         return item
 
 
-def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learning_rate=5e-5):
+def train(model, tokenizer, train_conversations):
     def create_training_data(conversations):
         inputs = []
         labels = []
@@ -77,48 +75,33 @@ def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learnin
     
     train_inputs, train_labels = create_training_data(train_conversations)
     
-    inputs = tokenizer(train_inputs, return_tensors="pt", padding="max_length", truncation=True, max_length=128)
-    labels = tokenizer(train_labels, return_tensors="pt", padding="max_length", truncation=True, max_length=128)
+    inputs = tokenizer(train_inputs, return_tensors="pt", padding="max_length", truncation=True, max_length=512)
+    labels = tokenizer(train_labels, return_tensors="pt", padding="max_length", truncation=True, max_length=512)
     inputs["labels"] = labels.input_ids
 
+    # print(inputs['input_ids'].shape)
+    # print(labels.shape)
+    # assert inputs['input_ids'].shape == labels.shape, f"Shape mismatch: {inputs['input_ids'].shape} vs {labels.shape}"
+    # assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors), "Size mismatch between tensors"
     train_dataset = ConversationDataset(inputs)
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     
-    optimizer = AdamW(model.parameters(), lr=learning_rate)
-    total_steps = len(train_dataloader) * epochs
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
-
-    # 训练
-    for epoch in range(epochs):
-        print(f"Epoch {epoch + 1}/{epochs}")
-        losses = []
-        
-        for step, batch in enumerate(train_dataloader):
-            input_ids = batch['input_ids'].to(model.device)
-            attention_mask = batch['attention_mask'].to(model.device)
-            labels = batch['labels'].to(model.device)
-            
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-            loss = outputs.loss
-            
-            loss.backward()
-            
-            optimizer.step()
-            scheduler.step()
-            
-            optimizer.zero_grad()
-
-            if step % 100 == 0:
-                print(f"Step {step}, Loss: {loss.item()}")
-            losses.append(losses)
-            
-            del input_ids, attention_mask, labels, outputs, loss
-            torch.cuda.empty_cache()
-
-        # 保存模型
-        with open('data/results/epoch' + str(epoch) + '-loss.json', 'w', encoding='utf-8') as o:
-            json.dump(outputs, o, ensure_ascii=False, indent=4)
-        model.save_pretrained(f'./data/Results/epoch_{epoch}')
+    training_args = TrainingArguments(
+        output_dir='./data/Results',
+        num_train_epochs=3,
+        per_device_train_batch_size=2,
+        logging_dir='./data/Logs',
+        save_steps=1000,
+        save_total_limit=2,
+    )
+    
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        # torch.utils.data.TensorDataset(inputs['input_ids'], labels),
+        train_dataset=train_dataset
+    )
+    
+    trainer.train()
 
 
 # BLEU 评分计算
@@ -186,7 +169,7 @@ def main(command, index=0):
     # 加载处理数据
     train_dialog = load_dialog_data(train_path, "syn")
     test_dialog = load_dialog_data(test_path, "smile")
-    train_dialog = random.sample(train_dialog, 10)
+    # train_dialog = random.sample(train_dialog, 10)
     test_dialog = random.sample(test_dialog, 10)
     
     train_conversations = preprocess_dialog_data(train_dialog)
