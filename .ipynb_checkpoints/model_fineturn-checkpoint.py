@@ -1,51 +1,55 @@
-from collections import Counter
 import json
 import os
-from collections import defaultdict
 
-from datasets import Dataset
+import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+from torch.optim import AdamW
+from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForCausalLM, get_linear_schedule_with_warmup
 
-from utils.parameters import *
+from sklearn.model_selection import train_test_split
+from nltk.translate.bleu_score import sentence_bleu
+from collections import Counter
+import random
+import numpy as np
 
 
-# parameters
-train_dataset_path = "./data/Chats/Output-1/"
-test_dataset_path = "./data/Chats/Output-1/"
+def load_dialog_data(data_dir, data_name):
+    """
+    加载多轮对话数据
+    """
+    dialog_data = []
+    for file_name in os.listdir(data_dir):
+        if file_name.endswith('.json'):
+            with open(os.path.join(data_dir, file_name), 'r', encoding='utf-8') as f:
+                dialog = json.load(f)
+                if data_name == "syn":
+                    dialog_data.append(dialog[1:])
+                elif data_name == "smile":
+                    dialog_data.append(dialog)
+                else:
+                    exit(0)
+    return dialog_data
 
 
-def load_datasets(train_data_path, test_data_path):
-    def load_multiple_json_files(directory_path):
-        all_data = []
-        # 遍历文件夹中的所有文件
-        for filename in os.listdir(directory_path):
-            if filename.endswith(".json"):
-                file_path = os.path.join(directory_path, filename)
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    all_data.extend(data[1:])  # 将数据合并到一个列表中
-        return all_data
-    
-    def preprocess_data(dataset):
-        dialogues = []
-        current_dialogue = []
+def preprocess_dialog_data(dialog_data):
+    """
+    处理对话数据为模型可用的输入
+    """
+    conversations = []
+    for dialog in dialog_data:
+        patient_dialogs = []
+        doctor_dialogs = []
+        for message in dialog:
+            if message['role'] == 'user' or message['role'] == 'client': # syn-dataset / Smile dataset
+                patient_dialogs.append(message['content'])
+            elif message['role'] == 'assistant' or message['role'] == 'counselor':
+                doctor_dialogs.append(message['content'])
         
-        for turn in dataset:
-            role = turn["role"]
-            content = turn["content"]
-            current_dialogue.append((role, content))
-            
-            if role == "医生":
-                dialogues.append(current_dialogue)
-                current_dialogue = []
-        
-        return dialogues
-
-    train_data = load_multiple_json_files(train_data_path)
-    test_data = load_multiple_json_files(test_data_path)
-    return preprocess_data(train_data), preprocess_data(test_data)
+        # 将患者的对话和医生的回答配对
+        # min(len(patient_dialogs), len(doctor_dialogs))
+        for i in range(min(len(patient_dialogs), len(doctor_dialogs))):
+            conversations.append((patient_dialogs[i], doctor_dialogs[i]))
+    return conversations
 
 
 class ConversationDataset(Dataset):
@@ -60,148 +64,145 @@ class ConversationDataset(Dataset):
         return item
 
 
-def mytrain(train_data_path, test_data_path):
-    def format_data(dialogues):
+def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learning_rate=5e-5):
+    def create_training_data(conversations):
         inputs = []
         labels = []
-        for dialogue in dialogues:
-            input_text = ""
-            output_text = ""
-            for role, content in dialogue:
-                if role == "患者":
-                    input_text += f"患者: {content}\n"
-                elif role == "医生":
-                    output_text += f"医生: {content}\n"
-            inputs.append(input_text)
-            labels.append(output_text)
+        for patient, doctor in conversations:
+            prompt = f"{patient}\n"
+            response = doctor
+            inputs.append(prompt)
+            labels.append(response)
         return inputs, labels
     
-    def tokenize_data(inputs, labels):
-        input_encodings = tokenizer(inputs, truncation=True, padding=True, return_tensors='pt')
-        label_encodings = tokenizer(labels, truncation=True, padding=True, return_tensors='pt')
-        input_encodings['labels'] = label_encodings['input_ids']
-        return input_encodings
-
-    # Data
-    train_data, _ = load_datasets(train_data_path, test_data_path)
-    train_inputs, train_labels = format_data(train_data)
-    train_encodings = tokenize_data(train_inputs, train_labels)
-    train_dataset = ConversationDataset(train_encodings)
+    train_inputs, train_labels = create_training_data(train_conversations)
     
-    tokenizer = AutoTokenizer.from_pretrained(testModelPath)
-    model = AutoModelForCausalLM.from_pretrained(testModelPath)
-    
-    # 设置训练参数
-    training_args = TrainingArguments(
-        output_dir='./results',
-        learning_rate=5e-5,
-        per_device_train_batch_size=4,
-        num_train_epochs=3,
-        weight_decay=0.01,
-    )
+    inputs = tokenizer(train_inputs, return_tensors="pt", padding="max_length", truncation=True, max_length=128)
+    labels = tokenizer(train_labels, return_tensors="pt", padding="max_length", truncation=True, max_length=128)
+    inputs["labels"] = labels.input_ids
 
+    train_dataset = ConversationDataset(inputs)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     
-    # 创建 Trainer
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-    )
-    
-    # 微调模型
-    trainer.train()
+    optimizer = AdamW(model.parameters(), lr=learning_rate)
+    total_steps = len(train_dataloader) * epochs
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
 
-
-def evaluate_bleu(model, tokenizer, test_data):
-    def compute_bleu(reference, hypothesis):
-        reference = [ref.split() for ref in reference]  # 参考答案
-        hypothesis = hypothesis.split()  # 预测答案
-        smoothing_function = SmoothingFunction().method1
-        return sentence_bleu(reference, hypothesis, smoothing_function=smoothing_function)
+    # 训练
+    for epoch in range(epochs):
+        print(f"Epoch {epoch + 1}/{epochs}")
+        losses = []
         
-    model.eval()
-    bleu_scores = []
+        for step, batch in enumerate(train_dataloader):
+            input_ids = batch['input_ids'].to(model.device)
+            attention_mask = batch['attention_mask'].to(model.device)
+            labels = batch['labels'].to(model.device)
+            
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+            loss = outputs.loss
+            
+            loss.backward()
+            
+            optimizer.step()
+            scheduler.step()
+            
+            optimizer.zero_grad()
+
+            if step % 100 == 0:
+                print(f"Step {step}, Loss: {loss.item()}")
+            losses.append(losses)
+            
+            del input_ids, attention_mask, labels, outputs, loss
+            torch.cuda.empty_cache()
+
+        # 保存模型
+        with open('data/results/epoch' + str(epoch) + '-loss.json', 'w', encoding='utf-8') as o:
+            json.dump(outputs, o, ensure_ascii=False, indent=4)
+        model.save_pretrained(f'./data/Results/epoch_{epoch}')
+
+
+# BLEU 评分计算
+def calculate_bleu(reference, hypothesis, n):
+    reference = [ref.split() for ref in reference]
+    hypothesis = hypothesis.split()
+
+    weights = tuple([1/n] * n)
+    return sentence_bleu(reference, hypothesis, weights=weights)
+
+# Distinct 计算
+def calculate_distinct(conversations):
+    all_responses = [response for response in conversations]
+    all_words = ' '.join(all_responses).split()
+    distinct_1 = len(set(all_words)) / len(all_words)
+    distinct_2 = len(set(tuple(all_words[i:i+2]) for i in range(len(all_words)-1))) / (len(all_words)-1)
+    distinct_3 = len(set(tuple(all_words[i:i+3]) for i in range(len(all_words)-2))) / (len(all_words)-2)
+    return distinct_1, distinct_2, distinct_3
+
+def evaluate_model(model, tokenizer, conversations, output_name):
+    references = []
+    hypotheses = []
+    for patient, doctor in conversations:
+        prompt = f"现在你是一位专业的心理医生，具有出共情能力和对来访者感受的深刻理解。确保回应流畅且类似人类的对话，字数控制在 10 到 100 个字之间。请为以下的患者提问生成一个回复，不要加上患者的话，只生成你的回复，也不需要添加任何表示身份的前缀。 {patient}"
+        response = None
+        with torch.no_grad():  # 禁用梯度计算
+            modelInputs = tokenizer([prompt], return_tensors="pt").to("cuda")
+            generatedIds = model.generate(
+                modelInputs.input_ids,
+                max_new_tokens=512
+            )
+            generatedIds = [
+                outputIds[len(input_ids):] for input_ids, outputIds in zip(modelInputs.input_ids, generatedIds)
+            ]
+            response = tokenizer.batch_decode(generatedIds, skip_special_tokens=True)[0]
+        # response = generate_response(prompt)
+        
+        references.append(doctor)
+        hypotheses.append(response)
+
+    bleu_1 = np.mean([calculate_bleu([ref], hyp, n=1) for ref, hyp in zip(references, hypotheses)])
+    bleu_2 = np.mean([calculate_bleu([ref], hyp, n=2) for ref, hyp in zip(references, hypotheses)])
+    bleu_3 = np.mean([calculate_bleu([ref], hyp, n=3) for ref, hyp in zip(references, hypotheses)])
+    distinct_1, distinct_2, distinct_3 = calculate_distinct(hypotheses)
     
-    for dialogue in test_data:
-        input_text = ""
-        for role, content in dialogue:
-            if role == "患者":
-                input_text += f"患者: {content}\n"
-        
-        # 生成回答
-        inputs = tokenizer(input_text, return_tensors='pt')
-        with torch.no_grad():
-            outputs = model.generate(inputs['input_ids'], max_length=100, num_beams=5, no_repeat_ngram_size=2)
-        
-        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        reference_text = dialogue[-1][1]
-        
-        bleu_score = compute_bleu([reference_text], generated_text)
-        bleu_scores.append(bleu_score)
+    print(f"BLEU-1: {bleu_1:.4f}")
+    # print(f"Distinct-1: {distinct_1:.4f}")
+    # print(f"Distinct-2: {distinct_2:.4f}")
     
-    avg_bleu = sum(bleu_scores) / len(bleu_scores)
-    return avg_bleu
-
-
-def evaluate_distinct(model, tokenizer, test_data):
-    def compute_distinct_ngrams(texts, n):
-        ngram_counter = Counter()
-        for text in texts:
-            tokens = text.split()
-            ngrams = [tuple(tokens[i:i+n]) for i in range(len(tokens) - n + 1)]
-            ngram_counter.update(ngrams)
-        distinct_score = len(ngram_counter) / len(texts)
-        return distinct_score
-        
-    model.eval()
-    distinct_1_scores, distinct_2_scores, distinct_3_scores = [], [], []
-    for dialogue in test_data:
-        input_text = ""
-        for role, content in dialogue:
-            if role == "患者":
-                input_text += f"患者: {content}\n"
-        
-        # 生成回答
-        inputs = tokenizer(input_text, return_tensors='pt')
-        with torch.no_grad():
-            outputs = model.generate(inputs['input_ids'], max_length=100, num_beams=5, no_repeat_ngram_size=2)
-        
-        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        distinct_1 = compute_distinct_ngrams([generated_text], 1)
-        distinct_2 = compute_distinct_ngrams([generated_text], 2)
-        distinct_3 = compute_distinct_ngrams([generated_text], 3)
-        
-        distinct_1_scores.append(distinct_1)
-        distinct_2_scores.append(distinct_2)
-        distinct_3_scores.append(distinct_3)
+    outputs = []
+    outputs.append({"bleu-1": bleu_1, "bleu-2": bleu_2, "bleu-3": bleu_3, "distinct-1": distinct_1, "distinct-2": distinct_2, "distinct-3": distinct_3})
+    for i in range(len(references)):
+        outputs.append({"label": references[i], "output": hypotheses[i]})
+    with open('data/Evaluation/before/' + str(output_name) + '.json', 'w', encoding='utf-8') as o:
+        json.dump(outputs, o, ensure_ascii=False, indent=4)
     
-    avg_distinct_1 = sum(distinct_1_scores) / len(distinct_1_scores)
-    avg_distinct_2 = sum(distinct_2_scores) / len(distinct_2_scores)
-    avg_distinct_3 = sum(distinct_3_scores) / len(distinct_3_scores)
+
+def main(command, index=0):
+    # parameters
+    train_path = './data/Chats/Output-1/'
+    # test_path = './data/Chats/Output-1/'
+    test_path = './data/SMILE-ChatDdata/'
+    model_name = "/root/autodl-tmp/Qwen2-7B-Instruct"
     
-    return avg_distinct_1, avg_distinct_2, avg_distinct_3
-
-
-def mytest(train_data_path, test_data_path):
-    _, test_data = load_datasets(train_data_path, test_data_path)
+    # 加载处理数据
+    train_dialog = load_dialog_data(train_path, "syn")
+    test_dialog = load_dialog_data(test_path, "smile")
+    train_dialog = random.sample(train_dialog, 10)
+    test_dialog = random.sample(test_dialog, 10)
     
-    tokenizer = AutoTokenizer.from_pretrained(testModelPath)
-    model = AutoModelForCausalLM.from_pretrained(testModelPath)
-    print(test_data[:3])
-    
-    bleu_score = evaluate_bleu(model, tokenizer, test_data)
-    distinct_score = evaluate_distinct(model, tokenizer, test_data)
+    train_conversations = preprocess_dialog_data(train_dialog)
+    test_conversations = preprocess_dialog_data(test_dialog)
 
-    print(bleu_score)
-    print(distinct_score)
+    # 加载预训练模型
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model.to("cuda")
 
-
-def main(command, train_data_path, test_data_path):
     if command == "train":
-        mytrain(train_data_path, test_data_path)
+        train(model, tokenizer, train_conversations)
     elif command == "test":
-        mytest(train_data_path, test_data_path)
+        # 评估模型
+        evaluate_model(model, tokenizer, test_conversations, 'smile' + str(index))
 
 
 if __name__ == '__main__':
-    main("test", train_dataset_path, test_dataset_path)
+    main("train")
