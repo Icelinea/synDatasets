@@ -32,7 +32,7 @@ def jsons_reorganize(input_dir, output_dir):
             existing_files = [f for f in os.listdir(folder_path) if f.startswith(weighted_score)]
             file_index = len(existing_files) + 1
 
-            new_filename = f"{weighted_score}_{file_index}.json"
+            new_filename = f"[{weighted_score}]_{file_index}.json"
             new_file_path = os.path.join(folder_path, new_filename)
 
             with open(new_file_path, "w", encoding="utf-8") as f:
@@ -114,9 +114,9 @@ def topics_check(data_dir):
 
 
 if __name__ == '__main__':
-    # jsons_reorganize("data/Chats/Scored2/", "data/Chats/Output/")
+    # jsons_reorganize("data/Chats/Scored3/", "data/Chats/Output/")
 
-    identity_organize("data/Chats/Output-2/", "data/Chats/Output-1/")
+    identity_organize("data/Chats/Output-2/", "data/Chats/Output/")
 
     """
     Dataset Numbers:  252
@@ -131,6 +131,6 @@ if __name__ == '__main__':
     其他情况 : 26
     """
 
-    topics_check("data/Chats/Output-1")
+    topics_check("data/Chats/Output")
 
     # 打印每种标签数量，判断补充数据 + 找 benchmark
