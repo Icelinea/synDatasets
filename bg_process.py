@@ -45,7 +45,7 @@ def basic_process(d):
     return dataset, error
 
 
-def first_load(outputName, encoding='utf-8'):
+def first_load(datasetName, outputName, encoding='utf-8'):
     # parameters
     # datasetName = [
     #     "bg-appetite.json",
@@ -59,10 +59,13 @@ def first_load(outputName, encoding='utf-8'):
     #     "bg-somatic.json",
     #     "bg-suicidal.json"
     # ]
-    datasetName = [
-        "bg-appetite-pad.json",
-        "bg-sleep-pad.json"
-    ]
+    
+    # datasetName = [
+    #     "bg-appetite-pad.json",
+    #     "bg-sleep-pad.json"
+    # ]
+
+    datasetName = datasetName
     
     datasets = []
     errors = []
@@ -198,11 +201,11 @@ if __name__ == '__main__':
     # local_encoding = 'ansi'
     local_encoding = 'utf-8'
     
-    # first_load('bg2.csv', local_encoding)
+    # first_load(["bg-somatic-pad.json", "bg-somatic-pad2.json"], 'bg3.csv', local_encoding)
 
-    # label_deduplicate("bg2.csv", 0.1, local_encoding)
+    # label_deduplicate("bg3.csv", 0.1, local_encoding)
 
-    # label_score('anno_pad_dupu_bg2.csv', local_encoding)
+    label_score('anno_pad_dupu_bg3.csv', local_encoding)
 
     # df = pd.read_csv(processedPath + "scored_anno_pad_dupu_bg2.csv", encoding=local_encoding)
     # df[["志愿者一致性评分", "志愿者质量评分", "专家一致性评分", "专家质量评分"]] = df[["志愿者一致性评分", "志愿者质量评分", "专家一致性评分", "专家质量评分"]].applymap(convert_to_int)

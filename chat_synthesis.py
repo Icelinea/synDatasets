@@ -6,11 +6,11 @@ import pandas as pd
 
 
 # path
-patientBackgroundPath = "data/PatientBackground/processed/scored_anno_pad_dupu_bg2.csv"
+patientBackgroundPath = "data/PatientBackground/processed/scored_anno_pad_dupu_bg3.csv"
 patientPersonaPath = "data/Persona/patient.json"
 doctorPersonaPath = "data/Persona/doctor.json"
-randomOutputPath = "./data/Chats/Random/Chat"
-scoredOutputPath = "./data/Chats/Scored2/Chat"
+randomOutputPath = "./data/Chats/Random2/Chat"
+scoredOutputPath = "./data/Chats/Scored3/Chat"
 
 
 def one_chatdata_synthesis(selectMethod, patient, doctor, pbdata, epoch, minChats, maxChats):
@@ -113,4 +113,4 @@ def chatdatas(selectMethod, epoches=20, minChats=10, maxChats=20):
 
 if __name__ == '__main__':
     # chatdatas('random', 500)
-    chatdatas('score', 50)
+    chatdatas('score', 100)
