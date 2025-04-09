@@ -132,5 +132,3 @@ if __name__ == '__main__':
     """
 
     topics_check("data/Chats/Output-1")
-
-    # 打印每种标签数量，判断补充数据 + 找 benchmark

@@ -108,14 +108,14 @@ def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learnin
 
             if step % 100 == 0:
                 print(f"Step {step}, Loss: {loss.item()}")
-            losses.append(losses)
+            losses.append(loss)
             
             # del input_ids, attention_mask, labels, outputs, loss
             torch.cuda.empty_cache()
 
         # 保存模型
         with open('data/results/epoch' + str(epoch) + '-loss.json', 'w', encoding='utf-8') as o:
-            json.dump(outputs, o, ensure_ascii=False, indent=4)
+            json.dump(losses, o, ensure_ascii=False, indent=4)
         model.save_pretrained(f'./data/Results/epoch_{epoch}')
 
 
