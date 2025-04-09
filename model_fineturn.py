@@ -62,7 +62,7 @@ class ConversationDataset(Dataset):
         return item
 
 
-def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learning_rate=5e-5):
+def train(model, tokenizer, train_conversations, epochs=3, batch_size=1, learning_rate=5e-5):
     def create_training_data(conversations):
         inputs = []
         labels = []
@@ -75,8 +75,8 @@ def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learnin
     
     train_inputs, train_labels = create_training_data(train_conversations)
     
-    inputs = tokenizer(train_inputs, return_tensors="pt", padding="max_length", truncation=True, max_length=128)
-    labels = tokenizer(train_labels, return_tensors="pt", padding="max_length", truncation=True, max_length=128)
+    inputs = tokenizer(train_inputs, return_tensors="pt", padding="max_length", truncation=True, max_length=8)
+    labels = tokenizer(train_labels, return_tensors="pt", padding="max_length", truncation=True, max_length=8)
     inputs["labels"] = labels.input_ids
 
     train_dataset = ConversationDataset(inputs)
@@ -87,11 +87,14 @@ def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learnin
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
 
     # 训练
+    # from time import sleep
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}/{epochs}")
         losses = []
         
         for step, batch in enumerate(train_dataloader):
+            torch.cuda.empty_cache()
+            
             input_ids = batch['input_ids'].to(model.device)
             attention_mask = batch['attention_mask'].to(model.device)
             labels = batch['labels'].to(model.device)
@@ -99,7 +102,11 @@ def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learnin
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
             loss = outputs.loss
             
+            del input_ids, attention_mask, labels, outputs
+            
             loss.backward()
+
+            del loss
             
             optimizer.step()
             scheduler.step()
@@ -110,8 +117,6 @@ def train(model, tokenizer, train_conversations, epochs=3, batch_size=2, learnin
                 print(f"Step {step}, Loss: {loss.item()}")
             losses.append(loss)
             
-            # del input_ids, attention_mask, labels, outputs, loss
-            torch.cuda.empty_cache()
 
         # 保存模型
         with open('data/results/epoch' + str(epoch) + '-loss.json', 'w', encoding='utf-8') as o:
